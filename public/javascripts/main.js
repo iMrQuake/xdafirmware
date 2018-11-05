@@ -16,54 +16,61 @@
 
 
 window.addEventListener('load', function () {
+  // attach the function to the search button
   let phoneModelBtn = document.querySelector('#phoneModelBtnId');
   phoneModelBtn.addEventListener('click', searchPhoneModel);
 
+  // initialize the Datatables, and allow single selection on the firmware table
   $('#deviceServiceInfosId').DataTable({
     select: 'single'
   });
 
-
+  // attach the function when a row is selected in the firmware table meaning, a selected firmware / customization
   $('#deviceServiceInfosId').DataTable().on( 'select', dataTablesOnSelect);
 
 });
 
+
+/**
+ * Search the device firmware information, by providing its reference
+ * TODO manage errors
+ * TODO set a fix size for all icons, and book this area before the search, or put a picture with device question mark
+ */
 async function searchPhoneModel() {
+  // get the model reference entered by the end-user; thaks user ! ;)
   let phoneModelValue = $('#phoneModelId').val();
-  //alert("Searching for model: " + phoneModelValue);;
-
+  
+  // building the api url
   let url = location.origin + '/xda/search/' + phoneModelValue;
-  //let url = '/xda' ;
-  console.log('fetching url: ' + url);
-  //let axiosResponse = await fetch(url) ;
+
   try {
+    // ask axios to get the data from the api
     let axiosResponse = await axios.get(url);
-    console.log('The XML file as json is:\n', axiosResponse.data);    
-
+    
+    // getting the icon of the device
     let modelInformation = await axios.get(location.origin + '/xda/icon/' + phoneModelValue);
-    console.log(modelInformation.data);
 
+    // get the DOM image element
     let imgId = document.querySelector('#imgId');
 
-    console.log('icon:', modelInformation.data[6]);
+    // set the url of the picture
     imgId.src = modelInformation.data[6];
 
-    
-
+    // fill the firmware table with the list of customozed firmaware
     fillCustomizationSelect(axiosResponse.data);
 
   } catch (error) {
     console.log(error);
   }
-
-
-
-
 }
 
 
+/**
+ * Fill the firmware table with data
+ *
+ * @param {*} jsonData the firmwares data
+ */
 function fillCustomizationSelect(jsonData) {
-  //= document.querySelector('#selectCustomizationId') ;
   let custoSelect = $('#selectCustomizationId');
 
   let tableData = [];
@@ -88,39 +95,49 @@ function fillCustomizationSelect(jsonData) {
         let linkTrack = softwareDeviceServiceInfoJsonObject['track-link'][0]['$']['href'] ;
         tableData.push([cdf, customerCustomization, softwareVersion, releaseState, link, linkTrack]);
 
-        console.log('Added option: ' + customerCustomization + ' with data: ' + JSON.stringify(softwareDeviceServiceInfoJsonObject));
+        //console.log('Added option: ' + customerCustomization + ' with data: ' + JSON.stringify(softwareDeviceServiceInfoJsonObject));
       });
-
-
     }
-
-
   }
-
   let deviceTable = $('#deviceServiceInfosId');
   $('#deviceServiceInfosId').dataTable().fnClearTable();
   $('#deviceServiceInfosId').dataTable().fnAddData(tableData);
 }
 
+/**
+ * TODO
+ *
+ * @param {*} e
+ */
 function displayDownloadLinks(e) {
 
 
 };
 
 
+/**
+ * Call when a firmware is selected into the firmware table
+ *
+ * @param {*} e
+ * @param {*} dt : Datatables interface API
+ * @param {*} type : Datatable selected item type: expected: row
+ * @param {*} indexes : Array of selected row indexes : only one because table selection is set to single
+ */
 function dataTablesOnSelect( e, dt, type, indexes ) {
   if ( type === 'row' ) {
     // only one single line select allow fromconfiguration  
     var dataArray = dt.rows(indexes[0]).data() ;
     for (let d = 0; d < dataArray.length; d++) {
       const rowData = dataArray[d];
-      //$('#linkId').text(link);
-      //$('#trackLinkId').text(trackLink);
     }  
-    
-      // do something with the ID of the selected items
+  
+    // TODO call api to get the files links to be downloaded and their respective names.
+    // then diplay them for download
   }
 };
+
+
+
 
 
 

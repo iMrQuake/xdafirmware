@@ -18,7 +18,11 @@
 var express = require('express');
 var router = express.Router();
 var rp = require('request-promise');
+// to convert XML to Json
 var parseXmlString = require('xml2js').parseString;
+
+// This router is to avoid CORS issue when performing request (not the same domain)
+// if someone knows how to avoid CORS witjout any browser extension, you're welcome
 
 router.get('/', function (req, res, next) {
     res.json({
@@ -27,6 +31,35 @@ router.get('/', function (req, res, next) {
 });
 
 
+/**
+ * Promising the Xml2Json api, in order to be sync ;)
+ *
+ * @param {*} xml
+ * @returns
+ */
+function convertXmlToJsonAsync(xml) {
+    return new Promise(function(resolve, reject){
+        parseXmlString(xml, function(error, result){
+            if(error){
+                reject(error);
+            }
+            else{
+                resolve(result);
+            }
+        })
+    });    
+}
+
+
+
+/**
+ * Serach for a device model reference. If founded, the device information are retrieved
+ * to get the list of supported devices, look at this url:
+ * https://dl-desktop-xcapps.sonymobile.com/production/xc/data/xc-supported-devices.xml
+ * It can be nice to display a search area for the end user or a combobox/tree from the supported device list
+ * @param {*} model
+ * @returns
+ */
 async function searchPhoneModel(model) {
     try {
         // The official sony URL to get device model information
@@ -47,6 +80,7 @@ async function searchPhoneModel(model) {
 }
 
 
+
 /* GET users listing. */
 router.get('/search/:model', async function (req, res, next) {
     try {
@@ -62,18 +96,6 @@ router.get('/search/:model', async function (req, res, next) {
 });
 
 
-function convertXmlToJsonAsync(xml) {
-    return new Promise(function(resolve, reject){
-        parseXmlString(xml, function(error, result){
-            if(error){
-                reject(error);
-            }
-            else{
-                resolve(result);
-            }
-        })
-    });    
-}
 
 async function getPhonesIcons() {
     try {
@@ -152,13 +174,44 @@ router.get('/icon/:model', async function (req, res, next) {
         });
 
     } catch (error) {
-        console.log(error);
+        //console.log(error);
         res.json({
             'error': error
         });
     }
 
 
+});
+
+
+
+
+async function getSupportedDevices() {
+    try {
+        // The official sony URL to get device supported models
+        // sony send back an xml document
+        var xmlResponse = await rp.get('https://dl-desktop-xcapps.sonymobile.com/production/xc/data/xc-supported-devices.xml');
+
+        // converting the xml to json object
+        let result = await convertXmlToJsonAsync(xmlResponse) ;
+        return result ;
+    } catch (error) {
+        return {
+            'error': error
+        };
+    }
+}
+
+router.get('/supporteddevices', async function (req, res, next) {
+    try {
+        let data = await getSupportedDevices();
+        res.json(data);
+    } catch (error) {
+        //console.log(error);
+        res.json({
+            'error': error
+        });
+    }
 });
 
 module.exports = router;
