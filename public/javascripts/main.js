@@ -1,3 +1,20 @@
+// Copyright (C) 2018  imrquake
+
+//     This program is free software: you can redistribute it and/or modify
+//     it under the terms of the GNU General Public License as published by
+//     the Free Software Foundation, either version 3 of the License, or
+//     (at your option) any later version.
+
+//     This program is distributed in the hope that it will be useful,
+//     but WITHOUT ANY WARRANTY; without even the implied warranty of
+//     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//     GNU General Public License for more details.
+
+//     You should have received a copy of the GNU General Public License
+//     along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+
+
 window.addEventListener('load', function () {
   let phoneModelBtn = document.querySelector('#phoneModelBtnId');
   phoneModelBtn.addEventListener('click', searchPhoneModel);
@@ -21,9 +38,7 @@ async function searchPhoneModel() {
   //let axiosResponse = await fetch(url) ;
   try {
     let axiosResponse = await axios.get(url);
-    console.log('The XML file as json is:\n', axiosResponse.data);
-    var input = document.querySelector('#phoneModelId');
-    input.value = JSON.stringify(axiosResponse.data);
+    console.log('The XML file as json is:\n', axiosResponse.data);    
 
     let modelInformation = await axios.get(location.origin + '/xda/icon/' + phoneModelValue);
     console.log(modelInformation.data);
@@ -33,7 +48,7 @@ async function searchPhoneModel() {
     console.log('icon:', modelInformation.data[6]);
     imgId.src = modelInformation.data[6];
 
-    console.log('input:\n', input);
+    
 
     fillCustomizationSelect(axiosResponse.data);
 
