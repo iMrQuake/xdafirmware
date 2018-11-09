@@ -20,7 +20,8 @@ var router = express.Router();
 var rp = require('request-promise');
 // to convert XML to Json
 var parseXmlString = require('xml2js').parseString;
-
+var sax = require('sax') ;
+var intoStream = require('into-stream') ;
 // This router is to avoid CORS issue when performing request (not the same domain)
 // if someone knows how to avoid CORS witjout any browser extension, you're welcome
 
@@ -39,7 +40,7 @@ router.get('/', function (req, res, next) {
  */
 function convertXmlToJsonAsync(xml) {
     return new Promise(function(resolve, reject){
-        parseXmlString(xml, function(error, result){
+        parseXmlString(xml, {trim: false}, function(error, result){
             if(error){
                 reject(error);
             }
@@ -49,7 +50,18 @@ function convertXmlToJsonAsync(xml) {
         })
     });    
 }
-
+function convertXmlToJsonWithOptionsAsync(xml, options) {
+    return new Promise(function(resolve, reject){
+        parseXmlString(xml, options, function(error, result){
+            if(error){
+                reject(error);
+            }
+            else{
+                resolve(result);
+            }
+        })
+    });    
+}
 
 
 /**
@@ -184,7 +196,10 @@ router.get('/icon/:model', async function (req, res, next) {
 });
 
 
-
+function commentProcessor(name){
+    console.log(name);
+    return name;
+  }
 
 async function getSupportedDevices() {
     try {
@@ -192,9 +207,23 @@ async function getSupportedDevices() {
         // sony send back an xml document
         var xmlResponse = await rp.get('https://dl-desktop-xcapps.sonymobile.com/production/xc/data/xc-supported-devices.xml');
 
-        // converting the xml to json object
-        let result = await convertXmlToJsonAsync(xmlResponse) ;
-        return result ;
+        
+        
+        let strict = true ;
+        let saxStream = sax.createStream(strict, {trim:false});
+        intoStream(xmlResponse).pipe(saxStream) ;
+
+        let supportedDevices = [] ;
+        saxStream.on("comment", function (node) {
+            console.log(JSON.stringify(node));
+            supportedDevices.push(node);
+          }) ;
+        saxStream.on("end", function (node) {
+            console.log("DONE------");
+            
+          }) ;
+          return supportedDevices;
+
     } catch (error) {
         return {
             'error': error
